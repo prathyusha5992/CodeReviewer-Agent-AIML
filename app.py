@@ -4,9 +4,11 @@ from github_api.github_client import get_pr_files, create_pr_comment
 
 app = FastAPI()
 
+
 @app.get("/")
 async def home():
     return {"message": "AI Code Reviewer Agent is running successfully!"}
+
 
 @app.post("/webhook")
 async def webhook(request: Request):
@@ -33,6 +35,9 @@ async def webhook(request: Request):
 
             review = review_code(code)
 
+            print("\n===== AI REVIEW =====")
+            print(review)
+
             full_review += f"### {file.filename}\n"
             full_review += review + "\n\n"
 
@@ -41,4 +46,3 @@ async def webhook(request: Request):
         print("Review posted successfully!")
 
     return {"status": "success"}
-#Testing AI Code Reviewer
