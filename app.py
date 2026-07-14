@@ -12,45 +12,42 @@ async def home():
 
 @app.post("/webhook")
 async def webhook(request: Request):
-    try:
-        payload = await request.json()
+    payload = await request.json()
 
-        print("\n========== WEBHOOK RECEIVED ==========")
-        print(payload)
+    print("\n========== WEBHOOK RECEIVED ==========")
+    print("Action:", payload.get("action"))
 
-        if payload.get("action") == "opened":
+    if payload.get("action") in ["opened","synchronize","reopened"]:
 
-            repo_name = payload["repository"]["full_name"]
-            pr_number = payload["pull_request"]["number"]
+        repo_name = payload["repository"]["full_name"]
+        pr_number = payload["pull_request"]["number"]
 
-            print("Repository:", repo_name)
-            print("PR Number:", pr_number)
+        print("Repository:", repo_name)
+        print("PR Number:", pr_number)
 
-            files = get_pr_files(repo_name, pr_number)
+        files = get_pr_files(repo_name, pr_number)
 
-            full_review = "## 🤖 AI Code Review\n\n"
+        full_review = "## 🤖 AI Code Review\n\n"
 
-            for file in files:
-                print("Reviewing:", file.filename)
+        for file in files:
 
-                code = file.patch if file.patch else ""
+            print("\nReviewing:", file.filename)
 
-                review = review_code(code)
+            code = file.patch if file.patch else ""
 
-                print("\n===== AI REVIEW =====")
-                print(review)
+            review = review_code(code)
 
-                full_review += f"### {file.filename}\n"
-                full_review += review + "\n\n"
+            print("\n===== AI REVIEW =====")
+            print(review)
 
-            create_pr_comment(repo_name, pr_number, full_review)
+            full_review += f"### {file.filename}\n"
+            full_review += review + "\n\n"
 
-            print("Review posted successfully!")
+        create_pr_comment(repo_name, pr_number, full_review)
 
-        return {"status": "success"}
+        print("\n✅ Review posted successfully!")
 
-    except Exception as e:
-        print("\n========== ERROR ==========")
-        print(e)
-        return {"status": "error", "message": str(e)}
-    
+    else:
+        print("Skipped because action is:", payload.get("action"))
+
+    return {"status": "success"}
