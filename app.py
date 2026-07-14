@@ -12,37 +12,45 @@ async def home():
 
 @app.post("/webhook")
 async def webhook(request: Request):
-    payload = await request.json()
+    try:
+        payload = await request.json()
 
-    print("Received Webhook")
+        print("\n========== WEBHOOK RECEIVED ==========")
+        print(payload)
 
-    if payload.get("action") == "opened":
+        if payload.get("action") == "opened":
 
-        repo_name = payload["repository"]["full_name"]
-        pr_number = payload["pull_request"]["number"]
+            repo_name = payload["repository"]["full_name"]
+            pr_number = payload["pull_request"]["number"]
 
-        print("Repository:", repo_name)
-        print("PR Number:", pr_number)
+            print("Repository:", repo_name)
+            print("PR Number:", pr_number)
 
-        files = get_pr_files(repo_name, pr_number)
+            files = get_pr_files(repo_name, pr_number)
 
-        full_review = "## 🤖 AI Code Review\n\n"
+            full_review = "## 🤖 AI Code Review\n\n"
 
-        for file in files:
-            print("\nReviewing:", file.filename)
+            for file in files:
+                print("Reviewing:", file.filename)
 
-            code = file.patch if file.patch else ""
+                code = file.patch if file.patch else ""
 
-            review = review_code(code)
+                review = review_code(code)
 
-            print("\n===== AI REVIEW =====")
-            print(review)
+                print("\n===== AI REVIEW =====")
+                print(review)
 
-            full_review += f"### {file.filename}\n"
-            full_review += review + "\n\n"
+                full_review += f"### {file.filename}\n"
+                full_review += review + "\n\n"
 
-        create_pr_comment(repo_name, pr_number, full_review)
+            create_pr_comment(repo_name, pr_number, full_review)
 
-        print("Review posted successfully!")
+            print("Review posted successfully!")
 
-    return {"status": "success"}
+        return {"status": "success"}
+
+    except Exception as e:
+        print("\n========== ERROR ==========")
+        print(e)
+        return {"status": "error", "message": str(e)}
+    
