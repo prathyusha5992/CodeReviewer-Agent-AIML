@@ -4,17 +4,20 @@ from github_api.github_client import get_pr_files, create_pr_comment
 
 app = FastAPI()
 
+
 @app.get("/")
 async def home():
     return {"message": "AI Code Reviewer Agent is running successfully!"}
+
 
 @app.post("/webhook")
 async def webhook(request: Request):
     payload = await request.json()
 
-    print("Received Webhook")
+    print("\n========== WEBHOOK RECEIVED ==========")
+    print("Action:", payload.get("action"))
 
-    if payload.get("action") == "opened":
+    if payload.get("action") in ["opened","synchronize","reopened"]:
 
         repo_name = payload["repository"]["full_name"]
         pr_number = payload["pull_request"]["number"]
@@ -27,18 +30,24 @@ async def webhook(request: Request):
         full_review = "## 🤖 AI Code Review\n\n"
 
         for file in files:
+
             print("\nReviewing:", file.filename)
 
             code = file.patch if file.patch else ""
 
             review = review_code(code)
 
+            print("\n===== AI REVIEW =====")
+            print(review)
+
             full_review += f"### {file.filename}\n"
             full_review += review + "\n\n"
 
         create_pr_comment(repo_name, pr_number, full_review)
 
-        print("Review posted successfully!")
+        print("\n✅ Review posted successfully!")
+
+    else:
+        print("Skipped because action is:", payload.get("action"))
 
     return {"status": "success"}
-#Testing AI Code Reviewer
